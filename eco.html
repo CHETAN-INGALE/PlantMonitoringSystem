@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="eco.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.lordicon.com/lordicon.js"></script>
+    
+</head>
+
+<body>
+
+    <div class="navbar">
+        <div class="logo">
+            <img src="eco logo.png" alt="">
+        </div>
+
+        <ul class="nav-list">
+            <li><a href="#hero">Home</a></li>
+            <li><a href="#second-page">Dashboard</a></li>
+            <li><a href="#contact">Help</a></li>
+        </ul>
+
+    </div>
+
+    <div class="hero" id="hero">
+        <div class="icon">
+            <lord-icon src="https://cdn.lordicon.com/mdnswxpr.json" trigger="hover" style="width:600px;height:600px">
+            </lord-icon>
+        </div>
+        <div class="head">
+            <h1>Your Plant Doctor</h1>
+            <div class="button-container">
+                <a href="#dashboard"><button>Let's Check</button></a>
+            </div>
+        </div>
+    </div>
+
+    <div class="second-page" id="second-page">
+        <h1>Dashboard</h1>
+        <div class="dashboard" id="dashboard">
+
+            <div class="data-chart">
+                <canvas id="data-chart"></canvas>
+            </div>
+
+            <div class="temp-graph">
+                <canvas id="temp-graph"></canvas>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="third-page">
+        <div class="moist-graph">
+            <canvas id="moist-graph"></canvas>
+        </div>
+
+        <div class="humid-graph">
+            <canvas id="humid-graph"></canvas>
+        </div>
+    </div>
+
+    <div class="contact-us" id="contact">
+        <h2>Need Help? Contact Us</h2>
+        <p>If you have any questions or need assistance, feel free to contact us:</p>
+        <ul>
+            <li>Email: ecometer@gmail.com</li>
+            <li>Phone: 123-456-7890</li>
+        </ul>
+    </div>
+
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const ctx1 = document.getElementById('data-chart').getContext('2d');
+            const ctx2 = document.getElementById('temp-graph').getContext('2d');
+            const ctx3 = document.getElementById('moist-graph').getContext('2d'); 
+            const ctx4 = document.getElementById('humid-graph').getContext('2d'); 
+            let pieChart;
+            let tempChart;
+            let moistureChart; 
+            let humidityChart; 
+            let tempData = [];
+            let humidityData = [];
+            let moistureData = []; 
+            const maxDataPoints = 10;
+
+            function fetchDataAndUpdateCharts() {
+                fetch("http://140.238.163.29:8000/data")
+                    .then(response => response.json())
+                    .then(data => {
+                        const key = Object.keys(data);
+                        const values = Object.values(data);
+
+                        if (!pieChart) {
+                            pieChart = new Chart(ctx1, {
+                                type: 'pie',
+                                data: {
+                                    labels: key,
+                                    datasets: [{
+                                        label: 'Sensor Data',
+                                        data: values,
+                                        backgroundColor: [
+                                            'brown',
+                                            'green',
+                                            'blue',
+                                            
+                                        ]
+                                    }]
+                                }
+                            });
+                        } else {
+                            pieChart.data.datasets[0].data = values;
+                            pieChart.update();
+                        }
+                    });
+
+                fetch("http://140.238.163.29:8000/temp")
+                    .then(response => response.json())
+                    .then(data => {
+                        const dateTime = data.date_time;
+                        const temperature = data.temp;
+
+                        tempData.push({ x: dateTime, y: temperature });
+
+                        if (tempData.length > maxDataPoints) {
+                            tempData.shift();
+                        }
+
+                        const chartData = {
+                            labels: tempData.map(entry => entry.x),
+                            datasets: [{
+                                label: 'Temperature',
+                                data: tempData.map(entry => entry.y),
+                                fill: false,
+                                borderColor: 'rgba(255, 99, 132, 1)',
+                                borderWidth: 1,
+                                tension: 0.4
+                            }]
+                        };
+
+                        const chartOptions = {
+                            scales: {
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Date-Time'
+                                    }
+                                },
+                                y: {
+                                    title: {
+                                        display: true,
+                                        text: 'Temperature'
+                                    }
+                                }
+                            }
+                        };
+
+                        if (!tempChart) {
+                            tempChart = new Chart(ctx2, {
+                                type: 'line',
+                                data: chartData,
+                                options: chartOptions
+                            });
+                        } else {
+                            tempChart.data.labels = chartData.labels;
+                            tempChart.data.datasets[0].data = chartData.datasets[0].data;
+                            tempChart.update();
+                        }
+                    });
+
+                fetch("http://140.238.163.29:8000/humidity")
+                    .then(response => response.json())
+                    .then(data => {
+                        const dateTime = data.date_time;
+                        const humidity = data.humidity;
+
+                        humidityData.push({ x: dateTime, y: humidity });
+
+                        if (humidityData.length > maxDataPoints) {
+                            humidityData.shift();
+                        }
+
+                        const chartData = {
+                            labels: humidityData.map(entry => entry.x),
+                            datasets: [{
+                                label: 'Humidity',
+                                data: humidityData.map(entry => entry.y),
+                                fill: false,
+                                borderColor: 'green',
+                                borderWidth: 1,
+                                tension: 0.4
+                            }]
+                        };
+
+                        const chartOptions = {
+                            scales: {
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Date-Time'
+                                    }
+                                },
+                                y: {
+                                    title: {
+                                        display: true,
+                                        text: 'Humidity'
+                                    }
+                                }
+                            }
+                        };
+
+                        if (!humidityChart) {
+                            humidityChart = new Chart(ctx4, {
+                                type: 'line',
+                                data: chartData,
+                                options: chartOptions
+                            });
+                        } else {
+                            humidityChart.data.labels = chartData.labels;
+                            humidityChart.data.datasets[0].data = chartData.datasets[0].data;
+                            humidityChart.update();
+                        }
+                    });
+
+                fetch("http://140.238.163.29:8000/moisture")
+                    .then(response => response.json())
+                    .then(data => {
+                        const dateTime = data.date_time;
+                        const moisture = data.moisture;
+
+                        moistureData.push({ x: dateTime, y: moisture });
+
+                        if (moistureData.length > maxDataPoints) {
+                            moistureData.shift();
+                        }
+
+                        const chartData = {
+                            labels: moistureData.map(entry => entry.x),
+                            datasets: [{
+                                label: 'Moisture',
+                                data: moistureData.map(entry => entry.y
+                                ),
+                                fill: false,
+                                borderColor: 'rgba(75, 192, 192, 1)',
+                                borderWidth: 1,
+                                tension: 0.4
+                            }]
+                        };
+
+                        const chartOptions = {
+                            scales: {
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Date-Time'
+                                    }
+                                },
+                                y: {
+                                    title: {
+                                        display: true,
+                                        text: 'Moisture'
+                                    }
+                                }
+                            }
+                        };
+
+                        if (!moistureChart) {
+                            moistureChart = new Chart(ctx3, {
+                                type: 'line',
+                                data: chartData,
+                                options: chartOptions
+                            });
+                        } else {
+                            moistureChart.data.labels = chartData.labels;
+                            moistureChart.data.datasets[0].data = chartData.datasets[0].data;
+                            moistureChart.update();
+                        }
+                    });
+            }
+
+            function updateChartEvery1minute() {
+                setInterval(fetchDataAndUpdateCharts, 1000);
+            }
+
+            fetchDataAndUpdateCharts();
+
+           
+            updateChartEvery1minute();
+        });
+    </script>
+
+</body>
+
+</html>
