@@ -4,8 +4,10 @@
 #define DHT11_PIN  21
 #define AOUT_PIN 36
 
-const char* ssid = "[Wifi SSID]";
-const char* password = "[Wifi Password]";
+const int relayMotar = 22;
+
+const char* ssid = "[WIFI SSID]";
+const char* password = "[WIFI PASSWORD]";
 const char* serverName = "http://140.238.163.29:8000/readSensor/";
 
 
@@ -16,6 +18,9 @@ DHT dht11(DHT11_PIN, DHT11);
 
 void setup() {
   Serial.begin(115200);
+
+  pinMode(relayMotar, OUTPUT);
+  digitalWrite(relayMotar, LOW);
 
   WiFi.begin(ssid, password);
   Serial.println("Connecting");
@@ -40,6 +45,13 @@ void loop() {
       int humi  = dht11.readHumidity();
       int tempC = dht11.readTemperature();
       int moist = (map(analogRead(AOUT_PIN),4095,2120,0,100));
+
+      if(moist < 20){
+        digitalWrite(relayMotar, HIGH);
+      }
+      if(moist > 60){
+        digitalWrite(relayMotar, LOW);
+      }
 
       // humi = 56;
       // tempC = 29;
